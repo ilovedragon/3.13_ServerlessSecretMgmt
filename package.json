@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/ilovedragon/3.13_ServerlessSecretMgmt#readme",
   "dependencies": {
-    "jest": "^29.6.2",
+    "jest": "^29.6.3",
     "serverless": "^3.34.0"
   },
   "devDependencies": {
