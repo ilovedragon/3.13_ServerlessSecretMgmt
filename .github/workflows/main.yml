@@ -1,34 +1,49 @@
 name: 3.13_ServerlessSecretMgmt
 run-name: ${{ github.actor }} is deploying a serverless platform with Secret Management
-on: [push]
 
-jobs: 
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'package-lock.json'
+      - 'yarn.lock'
+      - 'pnpm-lock.yaml'
+      - '.snyk'
+      - 'snyk/**'
+  workflow_dispatch:
+
+jobs:
   predeploy:
+    if: ${{ !contains(github.actor, 'snyk') }}
     runs-on: ubuntu-latest
     steps:
-      - run: echo "The job is automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "The job is automatically triggered by a ${{ github.event_name }} event. Actor: ${{ github.actor }}"
 
   install-dependencies:
+    if: ${{ !contains(github.actor, 'snyk') }}
     runs-on: ubuntu-latest
     needs: predeploy
-    steps: 
+    steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-      - name: Run installation of dependencies commands
+      - name: Install dependencies
         run: npm ci
 
   unit-testing:
+    if: ${{ !contains(github.actor, 'snyk') }}
     runs-on: ubuntu-latest
     needs: install-dependencies
-    steps: 
+    steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-      - name: Run installation of dependencies commands
+      - name: Install dependencies
         run: npm ci
-      - name: Run unit testing command
+      - name: Run unit tests
         run: npm test
 
   get-secret:
+    if: ${{ !contains(github.actor, 'snyk') }}
     runs-on: ubuntu-latest
     needs: unit-testing
     steps:
@@ -46,24 +61,21 @@ jobs:
           aws ssm get-parameter --name pohleng-parameter
 
   deploy:
+    if: ${{ !contains(github.actor, 'snyk') }}
     name: deploy
     runs-on: ubuntu-latest
     needs: get-secret
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - run: npm ci
-    - name: serverless deploy
-      uses: serverless/github-action@v3.2
-      with:
-        args: deploy
-      env:
-        AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-
-
-
+      - uses: actions/checkout@v3
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+      - run: npm ci
+      - name: serverless deploy
+        uses: serverless/github-action@v3.2
+        with:
+          args: deploy
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
